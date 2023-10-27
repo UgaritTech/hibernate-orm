@@ -16,6 +16,7 @@ import org.hibernate.engine.spi.PersistenceContext;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.query.ResultListTransformer;
 import org.hibernate.query.spi.QueryOptions;
+import org.hibernate.sql.exec.ExecutionException;
 import org.hibernate.sql.results.internal.RowProcessingStateStandardImpl;
 import org.hibernate.sql.results.jdbc.internal.JdbcValuesSourceProcessingStateStandardImpl;
 import org.hibernate.sql.results.jdbc.spi.JdbcValues;
@@ -180,7 +181,8 @@ public class ListResultsConsumer<R> implements ResultsConsumer<List<R>, R> {
 				}
 			}
 			else if ( this.uniqueSemantic == UniqueSemantic.ASSERT ) {
-				while ( rowProcessingState.next() ) {
+				boolean next = rowProcessingState.next();
+				while (next) {
 					if ( !results.addUnique( rowReader.readRow( rowProcessingState, processingOptions ) ) ) {
 						throw new HibernateException(
 								String.format(
@@ -191,6 +193,17 @@ public class ListResultsConsumer<R> implements ResultsConsumer<List<R>, R> {
 						);
 					}
 					rowProcessingState.finishRowProcessing();
+
+					try {
+						next = rowProcessingState.next();
+					} catch (ExecutionException eex) {
+						if (results.getResults().isEmpty()
+								|| !eex.getMessage().contains("Error advancing (next) ResultSet position")) {
+							throw eex;
+						} else {
+							next = false;
+						}
+					}
 				}
 			}
 			else {
