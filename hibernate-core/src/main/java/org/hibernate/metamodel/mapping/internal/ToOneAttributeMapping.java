@@ -1229,7 +1229,7 @@ public class ToOneAttributeMapping
 
 		 having the left join we don't want to add an extra implicit join that will be translated into an SQL inner join (see HHH-15342)
 		*/
-		if ( fetchTiming == FetchTiming.IMMEDIATE && selected || hasNotFoundAction() ) {
+		if ( fetchTiming == FetchTiming.IMMEDIATE && selected ) {
 			final TableGroup tableGroup = determineTableGroupForFetch(
 					fetchablePath,
 					fetchParent,
